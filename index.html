@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="UTF-8">
+    <title>Android.listviewframework by nightynight</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
+  </head>
+  <body>
+    <section class="page-header">
+      <h1 class="project-name">Android.listviewframework</h1>
+      <h2 class="project-tagline">Android ListView万能适配器+下拉、上拉刷新数据</h2>
+      <a href="https://github.com/nightynight/Android.ListViewFramework" class="btn">View on GitHub</a>
+      <a href="https://github.com/nightynight/Android.ListViewFramework/zipball/master" class="btn">Download .zip</a>
+      <a href="https://github.com/nightynight/Android.ListViewFramework/tarball/master" class="btn">Download .tar.gz</a>
+    </section>
+
+    <section class="main-content">
+      <h2>
+<a id="一万能适配器" class="anchor" href="#%E4%B8%80%E4%B8%87%E8%83%BD%E9%80%82%E9%85%8D%E5%99%A8" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>一.万能适配器</h2>
+
+<h4>
+<a id="项目中往往会用到多个listview传统的做法是为每个listview写一个适配器代码复用率太低本文就先介绍如何打造一个万能适配器" class="anchor" href="#%E9%A1%B9%E7%9B%AE%E4%B8%AD%E5%BE%80%E5%BE%80%E4%BC%9A%E7%94%A8%E5%88%B0%E5%A4%9A%E4%B8%AAlistview%E4%BC%A0%E7%BB%9F%E7%9A%84%E5%81%9A%E6%B3%95%E6%98%AF%E4%B8%BA%E6%AF%8F%E4%B8%AAlistview%E5%86%99%E4%B8%80%E4%B8%AA%E9%80%82%E9%85%8D%E5%99%A8%E4%BB%A3%E7%A0%81%E5%A4%8D%E7%94%A8%E7%8E%87%E5%A4%AA%E4%BD%8E%E6%9C%AC%E6%96%87%E5%B0%B1%E5%85%88%E4%BB%8B%E7%BB%8D%E5%A6%82%E4%BD%95%E6%89%93%E9%80%A0%E4%B8%80%E4%B8%AA%E4%B8%87%E8%83%BD%E9%80%82%E9%85%8D%E5%99%A8" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>项目中往往会用到多个ListView，传统的做法是为每个ListView写一个适配器，代码复用率太低。本文就先介绍如何打造一个万能适配器。</h4>
+
+<p>先来看看一般的做法：
+主布局文件就一个ListView，Item的布局文件就四个TextView。Bean中有四个字段，对应四个TextView。
+下面是Adapter：</p>
+
+<pre><code>public class MyAdapter extends BaseAdapter {
+    private LayoutInflater mInflater;
+    private List&lt;Bean&gt; mDatas;
+    public MyAdapter(Context context,List&lt;Bean&gt; datas){
+        mInflater=LayoutInflater.from(context);
+        mDatas=datas;
+    }
+    @Override
+    public int getCount() {
+        return mDatas.size();
+    }
+    @Override
+    public Object getItem(int position) {
+        return mDatas.get(position);
+    }
+    @Override
+    public long getItemId(int position) {
+        return position;
+    }
+    @Override
+    public View getView(int position, View convertView, ViewGroup parent) {
+        ViewHolder holder=null;
+        if(convertView==null){
+            convertView=mInflater.inflate(R.layout.item_listview,parent,false);
+            holder=new ViewHolder();
+            holder.mTitle=(TextView)convertView.findViewById(R.id.title);
+            holder.mDesc=(TextView)convertView.findViewById(R.id.desc);
+            holder.mTime=(TextView)convertView.findViewById(R.id.time);
+            holder.mPhone=(TextView)convertView.findViewById(R.id.phone);
+            convertView.setTag(holder);
+        }else {
+            holder=(ViewHolder)convertView.getTag();
+        }
+        final Bean bean=mDatas.get(position);
+        holder.mTitle.setText(bean.getTitle());
+        holder.mDesc.setText(bean.getDescribe());
+        holder.mTime.setText(bean.getTime());
+        holder.mPhone.setText(bean.getPhone());
+        return convertView;
+    }
+    private class ViewHolder{
+        TextView mTitle;
+        TextView mDesc;
+        TextView mTime;
+        TextView mPhone;
+    }
+}
+</code></pre>
+
+<p>要为Item写一个ViewHolder，还要重写四个方法，而主要的内容只在getView方法中。
+下面是MainActivity：</p>
+
+<pre><code>public class MainActivity extends AppCompatActivity {
+    private LoadListView listView;
+    private List&lt;Bean&gt; datas=new ArrayList&lt;Bean&gt;();;
+    private MyAdapter adapter;
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        initDatas();
+        initView();
+    }
+    private void initDatas() {
+        datas.add(new Bean("Android万能适配器1","Android打造万能的ListView和GridView适配器","2016-8-31","123456"));
+        datas.add(new Bean("Android万能适配器2","Android打造万能的ListView和GridView适配器","2016-8-31","123456"));
+        datas.add(new Bean("Android万能适配器3","Android打造万能的ListView和GridView适配器","2016-8-31","123456"));
+        datas.add(new Bean("Android万能适配器4","Android打造万能的ListView和GridView适配器","2016-8-31","123456"));
+        datas.add(new Bean("Android万能适配器5","Android打造万能的ListView和GridView适配器","2016-8-31","123456"));
+        datas.add(new Bean("Android万能适配器6","Android打造万能的ListView和GridView适配器","2016-8-31","123456"));
+        datas.add(new Bean("Android万能适配器7","Android打造万能的ListView和GridView适配器","2016-8-31","123456"));
+        datas.add(new Bean("Android万能适配器8","Android打造万能的ListView和GridView适配器","2016-8-31","123456"));
+        datas.add(new Bean("Android万能适配器9","Android打造万能的ListView和GridView适配器","2016-8-31","123456"));
+        datas.add(new Bean("Android万能适配器10","Android打造万能的ListView和GridView适配器","2016-8-31","123456"));
+        datas.add(new Bean("Android万能适配器11","Android打造万能的ListView和GridView适配器","2016-8-31","123456"));
+        adapter=new MyAdapter(this,datas);
+    }
+    private void initView() {
+        listView=(LoadListView) findViewById(R.id.listView);
+        listView.setAdapter(adapter); //传统方法
+    }
+}
+</code></pre>
+
+<h4>
+<a id="下面用通用适配器来封装" class="anchor" href="#%E4%B8%8B%E9%9D%A2%E7%94%A8%E9%80%9A%E7%94%A8%E9%80%82%E9%85%8D%E5%99%A8%E6%9D%A5%E5%B0%81%E8%A3%85" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>下面用通用适配器来封装。</h4>
+
+<p>先看一下封装的通用ViewHolder：</p>
+
+<pre><code>public class ViewHolder {
+    private SparseArray&lt;View&gt; mViews;//SparseArray是特殊的Map，key为int型，value为object
+    private int mPosition;
+    private View mConvertView;
+    public int getPosition() {
+        return mPosition;
+    }
+    public void setPosition(int mPosition) {
+        this.mPosition = mPosition;
+    }
+    public ViewHolder(Context context, ViewGroup parent,int layoutId,int position){
+        this.mPosition=position;
+        this.mViews=new SparseArray&lt;View&gt;();
+        mConvertView= LayoutInflater.from(context).inflate(layoutId,parent,false);
+        mConvertView.setTag(this);
+    }
+
+    //通过一个静态方法把holder暴露出去
+    public static ViewHolder get(Context context,View convertView,ViewGroup parent,int layoutId,int position){
+        if(convertView==null){
+            return new ViewHolder(context,parent,layoutId,position);
+        }else {
+            ViewHolder holder=(ViewHolder)convertView.getTag();
+            holder.mPosition=position;
+            return holder;
+        }
+    }
+    /**
+     * 通过viewID获取控件
+     * 通过holder.getView(viewId)就可以拿到对应的控件
+     * @param viewId
+     * @param &lt;T&gt;
+     * @return
+     */
+    public &lt;T extends View&gt; T getView(int viewId){
+        View view =mViews.get(viewId);
+        if (view==null){
+            view =mConvertView.findViewById(viewId);
+            mViews.put(viewId,view);
+        }
+        return (T)view;
+    }
+    public View getConvertView() {
+        return mConvertView;
+    }
+}
+</code></pre>
+
+<p>然后是通用适配器：</p>
+
+<pre><code>public abstract class CommonAdapter&lt;T&gt; extends BaseAdapter {
+    protected LayoutInflater mInflater;
+    protected List&lt;T&gt; mDatas;
+    protected Context mContext;
+    public CommonAdapter(Context context, List&lt;T&gt; datas){
+        this.mInflater=LayoutInflater.from(context);
+        this.mDatas=datas;
+        this.mContext=context;
+    }
+    public void onDateChange(List&lt;T&gt; mDatas) {
+        this.mDatas = mDatas;
+        this.notifyDataSetChanged();
+    }
+    @Override
+    public int getCount() {
+        return mDatas.size();
+    }
+    @Override
+    public T getItem(int position) {
+        return mDatas.get(position);
+    }
+    @Override
+    public long getItemId(int position) {
+        return position;
+    }
+    @Override
+    public View getView(int position, View convertView, ViewGroup parent) {
+        ViewHolder holder=ViewHolder.get(mContext,convertView,parent,R.layout.item_listview,position);
+        convert(holder,getItem(position));
+        return holder.getConvertView();
+    }
+    //通过一个抽象方法，把主要的代码暴露给用户在自己的类中实现
+    public abstract void convert(ViewHolder holder,T t);
+}
+</code></pre>
+
+<p>接下来看怎么用我们封装的Adapter：</p>
+
+<pre><code>public class MyAdapterWithCommon extends CommonAdapter&lt;Bean&gt; {
+    List&lt;Integer&gt; mPosition=new ArrayList&lt;&gt;();
+    public MyAdapterWithCommon(Context context, List&lt;Bean&gt; datas) {
+        super(context, datas);
+    }
+    @Override
+    public void convert(final ViewHolder holder, final Bean bean) {
+        //一般方法
+        ((TextView)holder.getView(R.id.title)).setText(bean.getTitle());
+        ((TextView)holder.getView(R.id.desc)).setText(bean.getDescribe());
+        ((TextView)holder.getView(R.id.time)).setText(bean.getTime());
+        ((TextView)holder.getView(R.id.phone)).setText(bean.getPhone());
+    }
+}
+</code></pre>
+
+<p>通过holder.getView(id)就可以拿到控件。
+接下来，我们看还能不能继续简化。可以把常用的控件相应的方法封装到ViewHolder中：</p>
+
+<pre><code>//下面为常用控件的辅助方法
+/**
+ * 设置TextView的值
+ * @param viewId
+ * @param text
+ * @return
+ */
+public ViewHolder setText(int viewId,String text){
+    TextView textView=getView(viewId);
+    textView.setText(text);
+    return this;
+}
+/**
+ * 设置ImageView的图片
+ * @param viewId
+ * @param resId
+ * @return
+ */
+public  ViewHolder setImageResource(int viewId,int resId){
+    ImageView view=getView(viewId);
+    view.setImageResource(resId);
+    return this;
+}
+//在这里写常用到的控件设置UI的方法
+//...
+</code></pre>
+
+<p>现在我们就可以在convert中这么使用：</p>
+
+<pre><code>//辅助方法
+holder.setText(R.id.title,bean.getTitle())
+        .setText(R.id.desc,bean.getDescribe())
+        .setText(R.id.time,bean.getTime())
+        .setText(R.id.phone,bean.getPhone());
+</code></pre>
+
+<p>也可以直接在Activity中通过内部类的方式来调用：</p>
+
+<pre><code>listView.setAdapter(new CommonAdapter&lt;Bean&gt;(MainActivity.this,datas) {  //使用匿名内部类
+    @Override
+    public void convert(ViewHolder holder, Bean bean) {
+        holder.setText(R.id.title,bean.getTitle())
+                .setText(R.id.desc,bean.getDescribe())
+                .setText(R.id.time,bean.getTime())
+                .setText(R.id.phone,bean.getPhone());
+    }
+});
+</code></pre>
+
+<h4>
+<a id="接下来看两个listview的常见问题" class="anchor" href="#%E6%8E%A5%E4%B8%8B%E6%9D%A5%E7%9C%8B%E4%B8%A4%E4%B8%AAlistview%E7%9A%84%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>接下来看两个ListView的常见问题：</h4>
+
+<h5>
+<a id="1在listview中加入checkbox或button后item无法点击" class="anchor" href="#1%E5%9C%A8listview%E4%B8%AD%E5%8A%A0%E5%85%A5checkbox%E6%88%96button%E5%90%8Eitem%E6%97%A0%E6%B3%95%E7%82%B9%E5%87%BB" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>1.在ListView中加入checkBox或button后item无法点击</h5>
+
+<pre><code>原因：Button、CheckBox等控件会抢占焦点
+解决方案：
+        a.给Button或CheckBox设置android:focusable="false"   
+        b.给item的layout节点添加android:descendantFocusability="blocksDescendants"
+</code></pre>
+
+<h5>
+<a id="2listview的复用问题" class="anchor" href="#2listview%E7%9A%84%E5%A4%8D%E7%94%A8%E9%97%AE%E9%A2%98" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>2.ListView的复用问题</h5>
+
+<pre><code>//下面演示如何解决ListView复用导致的CheckBox选中问题
+final CheckBox checkBox=holder.getView(R.id.checkbox);
+checkBox.setChecked(false);
+if ((mPosition.contains(holder.getPosition()))){
+    checkBox.setChecked(true);
+}
+checkBox.setOnClickListener(new View.OnClickListener() {
+    @Override
+    public void onClick(View v) {
+        if(checkBox.isChecked())
+            mPosition.add((Integer)holder.getPosition());
+        else
+            mPosition.remove((Integer)holder.getPosition());
+    }
+});
+</code></pre>
+
+<h2>
+<a id="二下拉上拉刷新数据" class="anchor" href="#%E4%BA%8C%E4%B8%8B%E6%8B%89%E4%B8%8A%E6%8B%89%E5%88%B7%E6%96%B0%E6%95%B0%E6%8D%AE" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>二.下拉、上拉刷新数据</h2>
+
+<h4>
+<a id="首先写好header和footer的布局文件分别为下拉和上拉时出现的布局" class="anchor" href="#%E9%A6%96%E5%85%88%E5%86%99%E5%A5%BDheader%E5%92%8Cfooter%E7%9A%84%E5%B8%83%E5%B1%80%E6%96%87%E4%BB%B6%E5%88%86%E5%88%AB%E4%B8%BA%E4%B8%8B%E6%8B%89%E5%92%8C%E4%B8%8A%E6%8B%89%E6%97%B6%E5%87%BA%E7%8E%B0%E7%9A%84%E5%B8%83%E5%B1%80" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>首先写好header和footer的布局文件，分别为下拉和上拉时出现的布局。</h4>
+
+<p>header_layout.xml：</p>
+
+<pre><code>&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical" &gt;
+    &lt;RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingBottom="10dp"
+        android:paddingTop="10dp" &gt;
+        &lt;LinearLayout
+            android:id="@+id/layout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:gravity="center"
+            android:orientation="vertical" &gt;
+            &lt;TextView
+                android:id="@+id/tip"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#777"
+                android:text="下拉可以刷新！" /&gt;
+            &lt;TextView
+                android:id="@+id/lastupdate_time"
+                android:textColor="#aaa"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" /&gt;
+        &lt;/LinearLayout&gt;
+        &lt;ImageView
+            android:id="@+id/arrow"
+            android:layout_width="wrap_content"
+            android:layout_height="30dp"
+            android:layout_toLeftOf="@id/layout"
+            android:layout_marginRight="20dp"
+            android:src="@drawable/pull_to_refresh_arrow" /&gt;
+        &lt;ProgressBar
+            android:id="@+id/progress"
+            style="?android:attr/progressBarStyleSmall"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toLeftOf="@id/layout"
+            android:layout_marginRight="20dp"
+            android:visibility="gone" /&gt;
+    &lt;/RelativeLayout&gt;
+&lt;/LinearLayout&gt;
+</code></pre>
+
+<p>footer_layout.xml：</p>
+
+<pre><code>&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent"&gt;
+    &lt;LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/load_layout"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:padding="10dp"&gt;
+        &lt;ProgressBar
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="?android:attr/progressBarStyleSmall"/&gt;
+        &lt;TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="正在加载..."/&gt;
+    &lt;/LinearLayout&gt;
+&lt;/LinearLayout&gt;
+</code></pre>
+
+<p>新建一个类，继承ListView类和OnScrollListener接口：</p>
+
+<pre><code>public class LoadListView extends ListView implements AbsListView.OnScrollListener {
+}
+</code></pre>
+
+<p>重写接口方法：</p>
+
+<pre><code>int scrollState;//ListView的当前滚动状态
+int firstVisibleItem;//第一个可见的Item
+int lastVisibleItem;//最后一个可见的Item
+int totalItemCount;//item的总数
+@Override
+public void onScroll(AbsListView absListView, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
+    this.lastVisibleItem=firstVisibleItem+visibleItemCount;
+    this.totalItemCount=totalItemCount;
+    this.firstVisibleItem=firstVisibleItem;
+}
+@Override
+public void onScrollStateChanged(AbsListView absListView, int scrollState) {
+    this.scrollState=scrollState;
+}
+</code></pre>
+
+<p>三个构造方法：</p>
+
+<pre><code>//三个构造方法
+public LoadListView(Context context) {
+    super(context);
+    initView(context);
+}
+public LoadListView(Context context, AttributeSet attrs) {
+    super(context, attrs);
+    initView(context);
+}
+public LoadListView(Context context, AttributeSet attrs, int defStyleAttr) {
+    super(context, attrs, defStyleAttr);
+    initView(context);
+}
+</code></pre>
+
+<p>下面是initView方法：</p>
+
+<pre><code>View header;//头部布局
+int headerHeight;
+boolean isLoadNewestDataReady=false;//是否准备好加载最新数据，当在最顶端按下时即为准备好了
+int state;//当前的状态
+final int NONE=0;//正常状态
+final int PULL=1;//提示下拉状态，显示下拉可以刷新
+final int RELESE=2;//提示释放状态，显示松开可以刷新
+final int REFLASHING=3;//提示正在刷新状态，显示正在刷新
+View footer;//底部布局
+int footerHeight;
+boolean isLoadMoreDataReady=false;//是否准备好加载更多数据，当在最底端按下时即为准备好了
+boolean isLoadingMoreData=false;//是否正在加载更多数据
+/**
+ * 初始化界面，把header_layout和footer_layout加载到avtivity_main布局，通过设置topPadding和bottomPadding来隐藏header和footer
+ * @param context
+ */
+private void initView(Context context){
+    LayoutInflater inflater=LayoutInflater.from(context);
+    header=inflater.inflate(R.layout.header_layout,null);
+    measureView(header);//测量
+    headerHeight = header.getMeasuredHeight();//拿到子控件的高
+    setTopPadding(-headerHeight);
+    this.addHeaderView(header);
+    footer=inflater.inflate(R.layout.footer_layout,null);
+    measureView(footer);
+    footerHeight=footer.getMeasuredHeight();
+    setBottomPadding(-footerHeight);
+    this.addFooterView(footer);
+    this.setOnScrollListener(this); //设置滚动监听器
+}
+</code></pre>
+
+<p>下面是measureView方法：</p>
+
+<pre><code>/**
+ * 测量，通知父布局，占用的宽、高
+ * @param view
+ */
+private void measureView(View view) {
+    ViewGroup.LayoutParams p = view.getLayoutParams();
+    if (p == null) {
+        p = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT);
+    }
+    int width = ViewGroup.getChildMeasureSpec(0, 0, p.width);
+    int height;
+    int tempHeight = p.height;
+    if (tempHeight &gt; 0) {
+        height = MeasureSpec.makeMeasureSpec(tempHeight, MeasureSpec.EXACTLY);
+    } else {
+        height = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED);
+    }
+    view.measure(width, height);
+}
+</code></pre>
+
+<p>setTopPadding方法和satBottomPadding方法：</p>
+
+<pre><code>/**
+ * 设置header的topPadding，控制header的显示
+ * @param topPadding
+ */
+private void setTopPadding(int topPadding) {
+    header.setPadding(header.getPaddingLeft(), topPadding,
+            header.getPaddingRight(), header.getPaddingBottom());
+    header.invalidate();
+}
+/**
+ * 设置footer的bottomPadding，控制footer的显示
+ * @param bottomPadding
+ */
+private  void setBottomPadding(int bottomPadding) {
+    footer.setPadding(footer.getPaddingLeft(), footer.getPaddingTop(),
+            footer.getPaddingRight(), bottomPadding);
+    footer.invalidate();
+}
+</code></pre>
+
+<p>下面是onTouchEvent方法，主要的手指操作逻辑都放在这：</p>
+
+<pre><code>int startY;//手指按下时的Y坐标
+@Override
+public boolean onTouchEvent(MotionEvent ev) {
+    switch (ev.getAction()){
+        case MotionEvent.ACTION_DOWN://手指按下
+            startY= (int) ev.getY();//获取手指按下的Y坐标
+            if (firstVisibleItem==0){//下拉刷新
+                isLoadNewestDataReady=true;
+            }
+            else if (totalItemCount==lastVisibleItem){//上拉加载更多
+                isLoadMoreDataReady=true;
+            }
+            break;
+        case MotionEvent.ACTION_MOVE://手指在屏幕上移动
+            onMove(ev);
+            break;
+        case MotionEvent.ACTION_UP://手指离开屏幕
+            if (state == RELESE) {
+                state = REFLASHING;
+                reflashViewByState();
+                // 加载最新数据；
+                LoadNewestAsyncTask loadNewestAsyncTask=new LoadNewestAsyncTask();
+                loadNewestAsyncTask.execute();
+            } else if(state!=REFLASHING) {
+                state = NONE;
+                isLoadNewestDataReady = false;
+                reflashViewByState();
+            }
+            break;
+    }
+    return super.onTouchEvent(ev);
+}
+</code></pre>
+
+<p>下面是onMove方法：</p>
+
+<pre><code>/**
+ * 移动过程操作
+ * @param ev
+ */
+private void onMove(MotionEvent ev){
+    //下拉刷新
+    if(isLoadNewestDataReady){
+        int tempY= (int) ev.getY();
+        int space=tempY-startY;//space&gt;0说明向下滑动
+        int topPadding=space-headerHeight;
+        switch (state){
+            case NONE:
+                if(space&gt;0)
+                    state=PULL;
+                reflashViewByState();
+                break;
+            case PULL:
+                setTopPadding(topPadding);
+                if(space&gt;headerHeight+200 &amp;&amp; scrollState==SCROLL_STATE_TOUCH_SCROLL){
+                    state=RELESE;
+                    reflashViewByState();
+                }else if(space&lt;=0){
+                    state=NONE;
+                    isLoadNewestDataReady=false;
+                    reflashViewByState();
+                }
+                break;
+            case RELESE:
+                if(space&lt;headerHeight+200 &amp;&amp; space&gt;0){
+                    state=PULL;
+                    reflashViewByState();
+                }
+                break;
+        }
+    }
+    //上拉获取更多数据
+    if (isLoadMoreDataReady) {
+        setBottomPadding(footer.getPaddingTop());
+        int tempY = (int) ev.getY();
+        int space = startY - tempY;//space&gt;0说明向上滑动
+        if (space &gt; 100 &amp;&amp; !isLoadingMoreData) {//如果上滑距离足够，且当前没有在加载数据
+            isLoadingMoreData = true;
+            //加载更多
+            LoadMoreAsyncTask loadMoreAsyncTask=new LoadMoreAsyncTask();
+            loadMoreAsyncTask.execute();
+        }
+    }
+}
+</code></pre>
+
+<p>reflashViewByState方法用来根据当前状态更新header的显示：</p>
+
+<pre><code>/**
+ * 根据下拉当前状态，改变界面显示；
+ */
+private void reflashViewByState() {
+    TextView tip = (TextView) header.findViewById(R.id.tip);
+    ImageView arrow = (ImageView) header.findViewById(R.id.arrow);
+    ProgressBar progress = (ProgressBar) header.findViewById(R.id.progress);
+    RotateAnimation anim = new RotateAnimation(0, 180,
+            RotateAnimation.RELATIVE_TO_SELF, 0.5f,
+            RotateAnimation.RELATIVE_TO_SELF, 0.5f);
+    anim.setDuration(500);
+    anim.setFillAfter(true);
+    RotateAnimation anim1 = new RotateAnimation(180, 0,
+            RotateAnimation.RELATIVE_TO_SELF, 0.5f,
+            RotateAnimation.RELATIVE_TO_SELF, 0.5f);
+    anim1.setDuration(500);
+    anim1.setFillAfter(true);
+    switch (state) {
+        case NONE:
+            arrow.clearAnimation();
+            setTopPadding(-headerHeight);
+            break;
+        case PULL:
+            arrow.setVisibility(View.VISIBLE);
+            progress.setVisibility(View.GONE);
+            tip.setText("下拉可以刷新！");
+            arrow.clearAnimation();
+            arrow.setAnimation(anim1);
+            break;
+        case RELESE:
+            arrow.setVisibility(View.VISIBLE);
+            progress.setVisibility(View.GONE);
+            tip.setText("松开可以刷新！");
+            arrow.clearAnimation();
+            arrow.setAnimation(anim);
+            break;
+        case REFLASHING:
+            setTopPadding(50);
+            arrow.setVisibility(View.GONE);
+            progress.setVisibility(View.VISIBLE);
+            tip.setText("正在刷新...");
+            arrow.clearAnimation();
+            break;
+    }
+}
+</code></pre>
+
+<p>获取数据放在onLoadNewest和onLoadMore方法中，这两个方法需要用户自己写，所以用一个接口，把这两个方法暴露出去：</p>
+
+<pre><code>/**
+ * 加载数据的回调接口，暴露给用户，在这个方法中刷新列表
+ * 重写方法时只需获取数据，把数据添加到List中即可
+ */
+public interface ILoadListener{
+    public void onLoadMore();
+    public void onLoadNewest();
+}
+</code></pre>
+
+<p>还需要一个接口的set方法把接口传进来：</p>
+
+<pre><code>ILoadListener iLoadListener;
+public void setInterface(ILoadListener iLoadListener){
+    this.iLoadListener = iLoadListener;
+}
+</code></pre>
+
+<p>在两个AsyncTask中获取数据刷新界面：</p>
+
+<pre><code>//把获取最新数据放在AsyncTask中
+class LoadNewestAsyncTask extends AsyncTask&lt;Void,Void,Void&gt; {
+    @Override
+    protected Void doInBackground(Void... params) {
+        iLoadListener.onLoadNewest();
+        return null;
+    }
+    @Override
+    protected void onPreExecute() {
+        super.onPreExecute();
+    }
+    @Override
+    /**
+     * 获取数据完成后更新界面，以及进行完成后的相关操作
+     */
+    protected void onPostExecute(Void aVoid) {
+        adapter.notifyDataSetChanged();//获取数据后刷新界面
+        loadNewsetComplete();
+        super.onPostExecute(aVoid);
+    }
+}
+//把获取更多数据放在AsyncTask中
+class LoadMoreAsyncTask extends AsyncTask&lt;Void,Void,Void&gt; {
+    @Override
+    protected Void doInBackground(Void... params) {
+        iLoadListener.onLoadMore();
+        return null;
+    }
+    @Override
+    protected void onPreExecute() {
+        super.onPreExecute();
+    }
+    @Override
+    /**
+     * 获取数据完成后更新界面，以及进行完成后的相关操作
+     */
+    protected void onPostExecute(Void aVoid) {
+        adapter.notifyDataSetChanged();//获取数据后刷新界面
+        loadMoreComplete();
+        super.onPostExecute(aVoid);
+    }
+}
+</code></pre>
+
+<p>loadMoreComplete和loadNewsetComplete是完成后的相关操作：</p>
+
+<pre><code>//上拉完成
+public void loadMoreComplete(){
+    setBottomPadding(-footerHeight);
+    isLoadingMoreData=false;
+    isLoadMoreDataReady=false;
+}
+//下拉完成
+public void loadNewsetComplete(){
+    setTopPadding(-headerHeight);
+    isLoadNewestDataReady=false;
+    state=NONE;
+    //设置上次刷新时间
+    TextView lastupdatetime = (TextView) header.findViewById(R.id.lastupdate_time);
+    SimpleDateFormat format = new SimpleDateFormat("MM.dd hh:mm");
+    Date date = new Date(System.currentTimeMillis());
+    String time = format.format(date);
+    lastupdatetime.setText("上次刷新时间："+time);
+}
+</code></pre>
+
+<p>在AsyncTask中用到了adapter.notifyDataSetChanged()方法，该方法用来数据更新后刷新界面。所以我们需要把adapter传进来，可以在setAdapter方法中把它传进来：</p>
+
+<pre><code>BaseAdapter adapter;
+//调用setAdapter时把adapter传进来
+public void setAdapter(BaseAdapter adapter) {
+    this.adapter = adapter;
+    super.setAdapter(adapter);//别忘了调用父类的setAdapter方法
+}
+</code></pre>
+
+<p>到这里，我们的LoadListView已经写完了，接下来看看怎么用：
+首先在布局文件中把ListView换成我的写的LoadListView，然后在Activity中继承ILoadListener接口，重写onLoadMore和onLoadNewest方法，把接口传回LoadListView：</p>
+
+<pre><code>private void getLoadMoreData(){
+    datas.add(new Bean("Android万能适配器0","Android打造万能的ListView和GridView适配器","2016-8-31","123456"));
+    datas.add(new Bean("Android万能适配器00","Android打造万能的ListView和GridView适配器","2016-8-31","123456"));
+}
+private void getLoadNewData(){
+    datas.add(0,new Bean("Android万能适配器0","Android打造万能的ListView和GridView适配器","2016-8-31","123456"));
+    datas.add(0,new Bean("Android万能适配器00","Android打造万能的ListView和GridView适配器","2016-8-31","123456"));
+}
+
+@Override
+public void onLoadMore() {
+    try {
+        Thread.sleep(2000);//模拟网络延迟
+    } catch (InterruptedException e) {
+        e.printStackTrace();
+    }
+    getLoadMoreData();
+}
+@Override
+public void onLoadNewest() {
+    // TODO Auto-generated method stub
+    try {
+        Thread.sleep(2000);
+    } catch (InterruptedException e) {
+        e.printStackTrace();
+    }
+    getLoadNewData();
+}
+</code></pre>
+
+<p>在initView方法中把接口传过去：</p>
+
+<pre><code>private void initView() {
+    listView=(LoadListView) findViewById(R.id.listView);
+    listView.setInterface(this);
+    listView.setAdapter(adapter);   //使用万能适配器
+}
+</code></pre>
+
+<h4>
+<a id="到这我们就把通用适配器和loadlistview封装好了要在其他项目中只用只要把commonadapterviewholderloadlistview和header_layoutxmlfooter_layoutxml拷贝过去就可以了" class="anchor" href="#%E5%88%B0%E8%BF%99%E6%88%91%E4%BB%AC%E5%B0%B1%E6%8A%8A%E9%80%9A%E7%94%A8%E9%80%82%E9%85%8D%E5%99%A8%E5%92%8Cloadlistview%E5%B0%81%E8%A3%85%E5%A5%BD%E4%BA%86%E8%A6%81%E5%9C%A8%E5%85%B6%E4%BB%96%E9%A1%B9%E7%9B%AE%E4%B8%AD%E5%8F%AA%E7%94%A8%E5%8F%AA%E8%A6%81%E6%8A%8Acommonadapterviewholderloadlistview%E5%92%8Cheader_layoutxmlfooter_layoutxml%E6%8B%B7%E8%B4%9D%E8%BF%87%E5%8E%BB%E5%B0%B1%E5%8F%AF%E4%BB%A5%E4%BA%86" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>到这，我们就把通用适配器和LoadListView封装好了，要在其他项目中只用，只要把CommonAdapter、ViewHolder、LoadListView和header_layout.xml、footer_layout.xml拷贝过去就可以了。</h4>
+
+      <footer class="site-footer">
+        <span class="site-footer-owner"><a href="https://github.com/nightynight/Android.ListViewFramework">Android.listviewframework</a> is maintained by <a href="https://github.com/nightynight">nightynight</a>.</span>
+
+        <span class="site-footer-credits">This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the <a href="https://github.com/jasonlong/cayman-theme">Cayman theme</a> by <a href="https://twitter.com/jasonlong">Jason Long</a>.</span>
+      </footer>
+
+    </section>
+
+  
+  </body>
+</html>
